@@ -61,7 +61,7 @@ final class DeviceController: ObservableObject {
     @Published var defaultMode: RecordingMode = .sp
     @Published var isUploading = false
 
-    private let io = DispatchQueue(label: "wmdm.netmd.io", qos: .userInitiated)
+    private let io = DispatchQueue(label: "mdkit.netmd.io", qos: .userInitiated)
     private var iface: NetMDInterface?
     private var pollTimer: Timer?
     private var cancelUpload = false
@@ -133,7 +133,7 @@ final class DeviceController: ObservableObject {
                 await connect(first)
             }
         }
-        if connected != nil, activeOps == 0, !isUploading {
+        if connected != nil, activeOps == 0, !isUploading, !isRipping {
             if let s = try? await perform { try $0.deviceStatus() } {
                 let hadDisc = status?.discPresent ?? false
                 status = s
@@ -420,6 +420,14 @@ final class DeviceController: ObservableObject {
                 setRip(id, .cancelled)
             } catch {
                 setRip(id, .failed(error.localizedDescription))
+                // A failed rip can leave the deck mid-seek or mid-realignment; stopping here
+                // (like startUploads does on failure) is safer than racing straight into another
+                // track's factory-mode sequence on top of that unknown state.
+                for remaining in ripItems where remaining.id != id {
+                    if case .pending = remaining.state { setRip(remaining.id, .cancelled) }
+                    if case .downloading = remaining.state { setRip(remaining.id, .cancelled) }
+                }
+                break
             }
         }
     }

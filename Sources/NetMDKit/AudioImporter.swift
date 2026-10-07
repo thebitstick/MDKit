@@ -84,7 +84,7 @@ public enum AudioImporter {
         case .lp2, .lp4:
             guard let encoderURL else { throw AudioImportError.encoderMissing }
             stage?("Encoding to ATRAC3 (\(mode.rawValue))…")
-            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("wmdm-\(UUID().uuidString)")
+            let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("mdkit-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tmp) }
             let wavURL = tmp.appendingPathComponent("in.wav"), outURL = tmp.appendingPathComponent("out.at3")

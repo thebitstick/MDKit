@@ -46,7 +46,7 @@ struct ContentView: View {
         }
         .overlay { if dropTargeted { RoundedRectangle(cornerRadius: 12).strokeBorder(Color.accentColor, style: .init(lineWidth: 3, dash: [8])).padding(6) } }
         .toolbar { toolbar }
-        .navigationTitle(device.connected?.name ?? "Web MiniDisc")
+        .navigationTitle(device.connected?.name ?? "MDKit")
         .navigationSubtitle(device.disc.map { $0.title.isEmpty ? "Untitled disc" : $0.title } ?? "")
         .fileImporter(isPresented: $showImporter, allowedContentTypes: [.audio, .data], allowsMultipleSelection: true) { result in
             if case .success(let urls) = result { addFiles(urls) }
