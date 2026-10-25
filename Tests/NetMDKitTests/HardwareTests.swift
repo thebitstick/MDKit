@@ -136,7 +136,16 @@ final class HardwareTests: XCTestCase {
         let iface = NetMDInterface(transport: try NetMDTransport(device: device))
         defer { iface.transport.close() }
         for attempt in 1...3 {
-            do { print("PROBE attempt \(attempt): status \(try iface.getStatus())"); return }
+            do {
+                print("PROBE attempt \(attempt): status \(try iface.getStatus())")
+                // Optional: remove leftovers from interrupted hardware tests (only tracks titled "hw-*").
+                if ProcessInfo.processInfo.environment["MDKIT_CLEANUP"] == "1" {
+                    let mine = try iface.listContent().allTracks.filter { $0.title.hasPrefix("hw-") }.map(\.index)
+                    try iface.deleteTracks(mine)
+                    print("PROBE removed \(mine.count) test track(s); disc now has \(try iface.getTrackCount())")
+                }
+                return
+            }
             catch { print("PROBE attempt \(attempt): \(error)") }
             Thread.sleep(forTimeInterval: 3)
         }
