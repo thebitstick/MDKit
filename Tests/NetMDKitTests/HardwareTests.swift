@@ -174,4 +174,16 @@ final class HardwareTests: XCTestCase {
         _ = try ripper.downloadTrack(0, progress: { p in if p.action == "READ" { reads = p.read } },
                                      isCancelled: { if reads >= 30 { kill(getpid(), SIGKILL) }; return false })
     }
+
+    /// Records one 90 s SP tone ("hw-quit-test") on a blank disc, as something to rip by hand in the app.
+    /// Remove it afterwards with `MDKIT_PROBE=1 MDKIT_CLEANUP=1 swift test --filter testProbe`.
+    func testSeedTrackForManualRip() throws {
+        let env = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(env["MDKIT_HARDWARE"] == "1" && env["MDKIT_SEED"] == "1", "set MDKIT_HARDWARE=1 MDKIT_SEED=1")
+        let device = try XCTUnwrap(NetMDTransport.attachedDevices().first, "no NetMD deck attached")
+        let iface = NetMDInterface(transport: try NetMDTransport(device: device))
+        defer { iface.transport.close() }
+        try XCTSkipUnless(try iface.listContent().trackCount == 0, "disc is not blank; refusing to touch it")
+        try iface.upload(try prepared("hw-quit-test", seconds: 90, mode: .sp))
+    }
 }

@@ -105,7 +105,7 @@ sector-streaming routine to serve raw ATRAC data instead of its normal response,
 Everything involved lives in RAM: nothing is written to the deck's EEPROM, and the moment it loses power the patches
 are gone, firmware back to stock.
 
-Open **Disc → Homebrew Ripping…** with a disc inserted; the app checks compatibility automatically and reports the
+Open **Disc → Homebrew Ripping…** (⇧⌘R, or the waveform button in the toolbar) with a disc inserted; the app checks compatibility automatically and reports the
 detected firmware version, or a clear reason if your particular unit isn't one it knows about yet — easy to extend
 if you can get the right addresses for your deck's firmware via netmd-exploits' own compatibility notes.
 

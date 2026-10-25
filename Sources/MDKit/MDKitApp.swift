@@ -25,6 +25,9 @@ struct MDKitApp: App {
                 Button("Eject") { Task { await device.eject() } }
                     .keyboardShortcut("e")
                     .disabled(device.connected == nil)
+                Button("Homebrew Ripping…") { NotificationCenter.default.post(name: .showRipper, object: nil) }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                    .disabled(device.connected == nil)
                 Divider()
                 Button("Disconnect") { device.disconnect() }
                     .disabled(device.connected == nil)
@@ -35,4 +38,5 @@ struct MDKitApp: App {
 
 extension Notification.Name {
     static let addFiles = Notification.Name("mdkit.addFiles")
+    static let showRipper = Notification.Name("mdkit.showRipper")
 }

@@ -52,6 +52,7 @@ struct ContentView: View {
             if case .success(let urls) = result { addFiles(urls) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .addFiles)) { _ in showImporter = true }
+        .onReceive(NotificationCenter.default.publisher(for: .showRipper)) { _ in showRipper = true }
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
             guard device.connected != nil else { return false }
             for p in providers {
