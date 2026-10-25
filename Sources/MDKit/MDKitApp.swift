@@ -1,8 +1,15 @@
 import SwiftUI
 import NetMDKit
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        DeviceController.current?.prepareForQuit() ?? .terminateNow
+    }
+}
+
 @main
 struct MDKitApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var device = DeviceController()
     @State private var importing = false
 
@@ -12,6 +19,13 @@ struct MDKitApp: App {
                 .environmentObject(device)
                 .frame(minWidth: 760, minHeight: 520)
         }
+        // A real window rather than a sheet: AppKit refuses to quit while a sheet is attached, which made ⌘Q
+        // useless mid-rip, exactly when quitting cleanly matters.
+        Window("Homebrew Mode Ripping", id: "ripper") {
+            HomebrewRippingView()
+                .environmentObject(device)
+        }
+        .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .newItem) {
                 Button("Add Audio Files…") { NotificationCenter.default.post(name: .addFiles, object: nil) }

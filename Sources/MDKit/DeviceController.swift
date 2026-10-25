@@ -1,5 +1,6 @@
 import Foundation
 import AppKit
+import OSLog
 import SwiftUI
 import NetMDKit
 
@@ -88,22 +89,35 @@ final class DeviceController: ObservableObject {
             Task { @MainActor in await self?.poll() }
         }
         Task { await poll() }
-        // Quitting mid-rip would leave the deck's firmware redirect enabled, and a deck in that state
-        // stops answering everything until it is power-cycled. Stop the rip first so it clears the flag.
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.stopRippingBeforeQuit() }
-        }
+        Self.current = self
     }
 
-    /// Cancels an in-progress rip and waits (bounded) for it to unwind and clear the redirect. Spins the
-    /// run loop rather than blocking, because the rip's cancellation check hops through the main queue.
-    private func stopRippingBeforeQuit() {
-        guard isRipping else { return }
+    /// The running controller, for the app delegate's quit handling.
+    static weak var current: DeviceController?
+    private var quitPending = false
+    private let quitLog = Logger(subsystem: "rip.bitstick.MDKit", category: "quit")
+
+    /// Quitting mid-rip would leave the deck's firmware redirect enabled, and a deck in that state stops
+    /// answering everything until it is power-cycled. So: cancel the rip, let it unwind (which clears the
+    /// redirect), and only then let the app terminate. Gives up after 20 s rather than hanging forever.
+    func prepareForQuit() -> NSApplication.TerminateReply {
+        guard isRipping else { return .terminateNow }
+        quitLog.notice("quit requested mid-rip; cancelling and waiting for it to unwind")
+        quitPending = true
         cancelRip = true
-        let deadline = Date().addingTimeInterval(15)
-        while isRipping, Date() < deadline {
-            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { [weak self] in
+            guard let self, self.quitPending else { return }
+            self.quitLog.error("rip did not unwind within 20 s; quitting anyway")
+            self.finishPendingQuit()
         }
+        return .terminateLater
+    }
+
+    private func finishPendingQuit() {
+        guard quitPending else { return }
+        quitPending = false
+        quitLog.notice("rip unwound; terminating")
+        NSApp.reply(toApplicationShouldTerminate: true)
     }
 
     // MARK: Worker plumbing
@@ -412,7 +426,7 @@ final class DeviceController: ObservableObject {
         guard ripper != nil, !isRipping else { return }
         isRipping = true
         cancelRip = false
-        defer { isRipping = false; busy = nil }
+        defer { isRipping = false; busy = nil; finishPendingQuit() }
 
         let tracksByIndex = Dictionary(uniqueKeysWithValues: (disc?.allTracks ?? []).map { ($0.index, $0) })
         ripItems = trackIndices.map { i in

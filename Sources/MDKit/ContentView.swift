@@ -12,7 +12,7 @@ struct ContentView: View {
     @State private var selection = Set<Int>()
     @State private var showImporter = false
     @State private var showQueue = false
-    @State private var showRipper = false
+    @Environment(\.openWindow) private var openWindow
     @State private var dropTargeted = false
     @State private var renameTarget: RenameTarget?
     @State private var confirmErase = false
@@ -52,7 +52,7 @@ struct ContentView: View {
             if case .success(let urls) = result { addFiles(urls) }
         }
         .onReceive(NotificationCenter.default.publisher(for: .addFiles)) { _ in showImporter = true }
-        .onReceive(NotificationCenter.default.publisher(for: .showRipper)) { _ in showRipper = true }
+        .onReceive(NotificationCenter.default.publisher(for: .showRipper)) { _ in openWindow(id: "ripper") }
         .onDrop(of: [.fileURL], isTargeted: $dropTargeted) { providers in
             guard device.connected != nil else { return false }
             for p in providers {
@@ -63,7 +63,6 @@ struct ContentView: View {
             return true
         }
         .sheet(isPresented: $showQueue) { UploadQueueView() }
-        .sheet(isPresented: $showRipper) { HomebrewRippingView() }
         .sheet(item: $renameTarget) { target in
             RenameSheet(target: target) { name in
                 Task {
@@ -112,7 +111,7 @@ struct ContentView: View {
                 Button("Erase Disc…", role: .destructive) { confirmErase = true }
             } label: { Label("Disc", systemImage: "opticaldisc") }
             .disabled(device.connected == nil || device.disc == nil)
-            Button { showRipper = true } label: { Label("Homebrew Ripping…", systemImage: "waveform.badge.magnifyingglass") }
+            Button { openWindow(id: "ripper") } label: { Label("Homebrew Ripping…", systemImage: "waveform.badge.magnifyingglass") }
                 .help("Download tracks via factory-mode sector recovery (non-MZ-RH1 decks)")
                 .disabled(device.connected == nil || device.disc == nil)
         }
