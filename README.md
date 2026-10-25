@@ -9,6 +9,10 @@
   and pull audio back off decks that were never meant to support it.
 </p>
 
+<p align="center">
+  <img src="docs/screenshot.png" width="640" alt="MDKit waiting for a NetMD recorder">
+</p>
+
 ---
 
 MDKit is a from-scratch Swift port of the device layer behind [Web MiniDisc Pro](https://github.com/asivery/webminidisc)
@@ -53,7 +57,8 @@ UI — homebrew mode ripping covers that use case for every deck now, including 
 
 ## Building
 
-Requirements: Xcode or the Swift 5.9+ toolchain, CMake, and Homebrew.
+Releases will ship as a `.zip`/`.dmg` for the architecture they were built on (Apple Silicon or Intel); until
+then, build from source. Requirements: Xcode or the Swift 5.9+ toolchain, CMake, and Homebrew.
 
 ```sh
 brew install libusb keystone cmake
@@ -64,6 +69,14 @@ open "build/MDKit.app"
 The app is ad-hoc signed (there's no paid Apple Developer account behind it), so Gatekeeper will block the first
 launch. Right-click the app in Finder and choose **Open** (or allow it in System Settings → Privacy & Security
 after the first blocked attempt) to run it anyway.
+
+To produce distributable archives (`build/release/MDKit-<version>-<arch>.zip`, `.dmg`, and `SHA256SUMS.txt`):
+
+```sh
+Scripts/package.sh
+```
+
+Pushing a `v*` tag runs the release workflow, which tests, packages, and attaches those files to a GitHub release.
 
 ```sh
 swift test                  # protocol codec, DES, titles, ARM assembler, ATRAC decode — no hardware needed
@@ -117,8 +130,15 @@ As ever with anything that pokes at a device's factory mode: try it with a disc 
 first. The ripping patches are RAM-only and self-clear on disconnect, but this is still low-level, reverse-engineered
 protocol work.
 
+## Contributing
+
+Issues and pull requests are welcome. `swift test` needs no hardware and runs in CI on every push. If you have a
+deck that isn't in the firmware tables yet, the most useful thing is the model and the version string the Homebrew
+Ripping panel reports. See [AI-DISCLOSURE.md](AI-DISCLOSURE.md) for how this project was built.
+
 ## License
 
 GPL-2.0, matching upstream Web MiniDisc Pro. Bundled/linked components: atracdenc (LGPL-2.1), libusb (LGPL-2.1),
 Keystone (BSD-3-Clause). NetMD protocol logic ported from Web MiniDisc Pro / netmd-js by asivery and Stefano Brilli;
-homebrew-mode ripping ported from netmd-exploits and netmd-tocmanip by asivery.
+homebrew-mode ripping ported from netmd-exploits and netmd-tocmanip by asivery. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

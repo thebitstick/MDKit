@@ -1,0 +1,17 @@
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install libusb keystone cmake
+      - run: swift test
+      - run: Scripts/package.sh
+      - run: gh release create "${{ github.ref_name }}" build/release/*.zip build/release/*.dmg build/release/SHA256SUMS.txt --generate-notes --title "MDKit ${{ github.ref_name }}"
+        env:
+          GH_TOKEN: ${{ github.token }}

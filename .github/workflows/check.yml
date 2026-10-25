@@ -1,0 +1,15 @@
+name: check
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  test:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - run: brew install libusb keystone cmake
+      - run: swift build
+      - run: swift test
+      - run: Scripts/build-app.sh
+      - run: codesign --verify --deep --strict build/MDKit.app

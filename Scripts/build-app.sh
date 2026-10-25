@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds "MDKit.app" into build/ (release, host architecture, ad-hoc signed).
+# Builds "MDKit.app" into build/ (release, host architecture). Ad-hoc signed unless SIGN_IDENTITY is set.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -17,6 +17,7 @@ cp Resources/Info.plist "$APP/Contents/Info.plist"
 [ -f Resources/AppIcon.icns ] && cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
 
 # Hardened runtime + ad-hoc signature so Gatekeeper accepts a locally built app after first-run approval.
-codesign --force --options runtime --sign - "$APP/Contents/Resources/atracdenc"
-codesign --force --options runtime --entitlements Resources/MDKit.entitlements --sign - "$APP"
-echo "Built: $APP"
+SIGN="${SIGN_IDENTITY:--}"
+codesign --force --options runtime --sign "$SIGN" "$APP/Contents/Resources/atracdenc"
+codesign --force --options runtime --entitlements Resources/MDKit.entitlements --sign "$SIGN" "$APP"
+echo "$APP"

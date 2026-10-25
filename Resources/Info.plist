@@ -4,7 +4,7 @@
 <dict>
     <key>CFBundleName</key><string>MDKit</string>
     <key>CFBundleDisplayName</key><string>MDKit</string>
-    <key>CFBundleIdentifier</key><string>wiki.minidisc.MDKit</string>
+    <key>CFBundleIdentifier</key><string>rip.bitstick.MDKit</string>
     <key>CFBundleExecutable</key><string>MDKit</string>
     <key>CFBundleIconFile</key><string>AppIcon</string>
     <key>CFBundlePackageType</key><string>APPL</string>
