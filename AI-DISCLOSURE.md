@@ -25,5 +25,5 @@ what failed. The ripping backend was debugged that way, through several rounds o
 
 - Any other deck or firmware version, including every other entry in the firmware tables and the Type-R and no-RAM
   ripping paths.
-- Intel Macs, and macOS versions other than the author's.
+- Intel Macs (unsupported), and macOS versions other than the author's.
 - The release workflow, until the first tag is pushed.

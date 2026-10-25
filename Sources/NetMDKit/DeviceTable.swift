@@ -1,6 +1,6 @@
 import Foundation
 
-public struct DeviceDefinition {
+public struct DeviceDefinition: Sendable {
     public let vendorId: UInt16
     public let productId: UInt16
     public let name: String

@@ -26,7 +26,7 @@ if "pcm_io_wav16" not in s:
     open(p, "w").write(s)
 PY
 cmake -S "$WORK/src" -B "$WORK/build" -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+  -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
 cmake --build "$WORK/build" -j"$(sysctl -n hw.ncpu)"
 cp "$(find "$WORK/build" -name atracdenc -type f -perm -u+x | head -1)" "$ROOT/build/atracdenc"
 echo "Built $ROOT/build/atracdenc"

@@ -2,7 +2,7 @@ import Foundation
 import CLibUSB
 
 /// A NetMD device visible on the USB bus (not necessarily opened).
-public struct AttachedDevice: Equatable, Hashable {
+public struct AttachedDevice: Equatable, Hashable, Sendable {
     public let definition: DeviceDefinition
     public let busNumber: UInt8
     public let address: UInt8

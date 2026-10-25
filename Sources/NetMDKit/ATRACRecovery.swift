@@ -20,7 +20,7 @@ public protocol SectorRecoveryBackend {
 
 public struct RecoveryProgress { public var read: Int; public var total: Int; public var action: String }
 
-public struct RecoveryConfig {
+public struct RecoveryConfig: Sendable {
     public var removeLPBytes = true
     public var verifyValidAtrac = true
     public var respectSoundGroupBoundaries = true

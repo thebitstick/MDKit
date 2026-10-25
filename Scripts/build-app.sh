@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds "MDKit.app" into build/ (release, host architecture). Ad-hoc signed unless SIGN_IDENTITY is set.
+# Builds "MDKit.app" into build/ (release, arm64). Ad-hoc signed unless SIGN_IDENTITY is set.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"

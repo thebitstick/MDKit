@@ -57,8 +57,8 @@ UI — homebrew mode ripping covers that use case for every deck now, including 
 
 ## Building
 
-Releases will ship as a `.zip`/`.dmg` for the architecture they were built on (Apple Silicon or Intel); until
-then, build from source. Requirements: Xcode or the Swift 5.9+ toolchain, CMake, and Homebrew.
+Releases are Apple Silicon (arm64) only `.zip`/`.dmg` files on the
+[Releases page](https://github.com/thebitstick/MDKit/releases). To build from source, you need Xcode or the Swift 5.9+ toolchain, CMake, and Homebrew.
 
 ```sh
 brew install libusb keystone cmake
@@ -83,11 +83,11 @@ swift test                  # protocol codec, DES, titles, ARM assembler, ATRAC 
 ```
 
 Notes:
-- The build is **host-architecture only** — Homebrew's `libusb`/`keystone` bottles are single-arch, so an Apple
-  Silicon build won't run on Intel and vice versa. Build on the machine (or architecture) you intend to run on.
+- **Apple Silicon only.** Homebrew's `libusb`/`keystone` bottles are single-arch and the project is only tested on
+  arm64. Intel Macs aren't supported.
 - `LIBUSB_PREFIX=/usr/local` / `KEYSTONE_PREFIX=/usr/local/opt/keystone` override the default `/opt/homebrew`
-  locations, e.g. on Intel Macs.
-- `Scripts/build-atracdenc.sh` builds [atracdenc](https://github.com/dcherednik/atracdenc) as a universal binary with
+  locations, e.g. for a non-Homebrew install.
+- `Scripts/build-atracdenc.sh` builds [atracdenc](https://github.com/dcherednik/atracdenc) as an arm64 binary with
   a small built-in WAV reader/writer (`Vendor/patches/pcm_io_wav16.cpp`) in place of libsndfile, so the bundled
   encoder has no dylib dependencies of its own.
 
@@ -138,7 +138,7 @@ Ripping panel reports. See [AI-DISCLOSURE.md](AI-DISCLOSURE.md) for how this pro
 
 ## License
 
-GPL-2.0, matching upstream Web MiniDisc Pro. Bundled/linked components: atracdenc (LGPL-2.1), libusb (LGPL-2.1),
+GPL-2.0 ([LICENSE.md](LICENSE.md)), matching upstream Web MiniDisc Pro. Bundled/linked components: atracdenc (LGPL-2.1), libusb (LGPL-2.1),
 Keystone (BSD-3-Clause). NetMD protocol logic ported from Web MiniDisc Pro / netmd-js by asivery and Stefano Brilli;
 homebrew-mode ripping ported from netmd-exploits and netmd-tocmanip by asivery. See
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

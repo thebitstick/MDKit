@@ -64,7 +64,9 @@ public struct EncryptedPacket {
 }
 
 /// Port of netmd-js `NetMDInterface`: the AV/C-style command set spoken by NetMD recorders.
-public final class NetMDInterface {
+/// Not thread-safe by itself: the app serialises every call onto one I/O queue, which is what makes
+/// handing it across concurrency domains safe.
+public final class NetMDInterface: @unchecked Sendable {
     public let transport: NetMDTransport
     public var device: DeviceDefinition { transport.device.definition }
 

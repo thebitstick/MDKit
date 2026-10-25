@@ -3,7 +3,7 @@ import Foundation
 /// Drives one "homebrew mode" ripping session: authenticates into factory mode, detects the
 /// exact firmware version, activates `USBCodeExecution`, and downloads tracks via the no-RAM
 /// sector-recovery backend. This is the orchestration layer the app UI talks to.
-public final class HomebrewRipper {
+public final class HomebrewRipper: @unchecked Sendable {
     public let iface: NetMDInterface
     public let factory: FactoryInterface
     public private(set) var versionCode: String = ""

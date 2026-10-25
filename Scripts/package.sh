@@ -3,13 +3,13 @@
 #
 #   Scripts/package.sh
 #
-# The build is host-architecture only (Homebrew's libusb/keystone are single-arch), so the zip is
-# arm64 on Apple Silicon and x86_64 on Intel. The app is ad-hoc signed unless SIGN_IDENTITY is set.
+# Apple Silicon (arm64) only: Homebrew's libusb/keystone are single-arch and this is what the project is
+# tested on. The app is ad-hoc signed unless SIGN_IDENTITY is set.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" Resources/Info.plist)
-ARCH=$(uname -m)
+ARCH=arm64
 APP=$(Scripts/build-app.sh | tail -1)
 
 DIST=build/release

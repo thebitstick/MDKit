@@ -91,6 +91,7 @@ final class DeviceController: ObservableObject {
 
     // MARK: Worker plumbing
 
+    @discardableResult
     private func perform<T: Sendable>(_ label: String? = nil, _ body: @escaping @Sendable (NetMDInterface) throws -> T) async throws -> T {
         guard let iface else { throw NetMDError.usb("No recorder connected") }
         activeOps += 1
@@ -99,7 +100,7 @@ final class DeviceController: ObservableObject {
             activeOps -= 1
             if activeOps == 0 { busy = nil }
         }
-        nonisolated(unsafe) let box = iface
+        let box = iface
         return try await withCheckedThrowingContinuation { cont in
             io.async {
                 do { cont.resume(returning: try body(box)) } catch { cont.resume(throwing: error) }
@@ -134,7 +135,8 @@ final class DeviceController: ObservableObject {
             }
         }
         if connected != nil, activeOps == 0, !isUploading, !isRipping {
-            if let s = try? await perform { try $0.deviceStatus() } {
+            let polled = try? await perform { try $0.deviceStatus() }
+            if let s = polled {
                 let hadDisc = status?.discPresent ?? false
                 status = s
                 if s.discPresent && (!hadDisc || disc == nil) && ![.readingTOC].contains(s.state) { await refresh() }
@@ -331,7 +333,7 @@ final class DeviceController: ObservableObject {
         guard let ripper else { throw NetMDError.usb("Homebrew ripping was not initialized") }
         activeOps += 1
         defer { activeOps -= 1; if activeOps == 0 { busy = nil } }
-        nonisolated(unsafe) let box = ripper
+        let box = ripper
         return try await withCheckedThrowingContinuation { cont in
             io.async {
                 do { cont.resume(returning: try body(box)) } catch { cont.resume(throwing: error) }
@@ -345,7 +347,7 @@ final class DeviceController: ObservableObject {
         guard let iface else { ripperReadiness = .unavailable("Not connected"); return }
         if case .ready = ripperReadiness { return } // Already prepared this session.
         ripperReadiness = .checking
-        nonisolated(unsafe) let ifaceBox = iface
+        let ifaceBox = iface
         do {
             let (newRipper, version): (HomebrewRipper, String) = try await withCheckedThrowingContinuation { cont in
                 io.async {
@@ -391,8 +393,11 @@ final class DeviceController: ObservableObject {
             busy = "Ripping “\(item.title)”…"
             setRip(id, .downloading(0))
             let cancelled = { [weak self] in self?.cancelRip ?? true }
-            var config = RecoveryConfig()
-            config.verifyValidAtrac = !skipAtracValidation
+            let config: RecoveryConfig = {
+                var c = RecoveryConfig()
+                c.verifyValidAtrac = !skipAtracValidation
+                return c
+            }()
             do {
                 let result: (data: [UInt8], fileExtension: String) = try await performRipper { ripper in
                     var r = try ripper.downloadTrack(item.index, config: config, progress: { p in

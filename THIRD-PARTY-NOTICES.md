@@ -1,6 +1,6 @@
 # Third-party notices
 
-MDKit is GPL-2.0 ([LICENSE](LICENSE)). It includes, links, or is ported from the following.
+MDKit is GPL-2.0 ([LICENSE.md](LICENSE.md)). It includes, links, or is ported from the following.
 
 ## Included in the app
 
