@@ -27,6 +27,7 @@ music to a disc and reads tracks back off decks that never supported it ("homebr
 brew install libusb keystone cmake
 swift build
 swift test                       # 25 tests, a few seconds, no hardware
+MDKIT_HARDWARE=1 ATRACDENC_PATH=build/atracdenc swift test --filter HardwareTests   # ~3 min; BLANK disc in a real deck, MDKit quit
 Scripts/build-app.sh             # build/MDKit.app, release, arm64, ad-hoc signed (builds atracdenc on first run)
 Scripts/package.sh               # then build/release/*.zip, *.dmg, SHA256SUMS.txt
 ```
@@ -40,7 +41,7 @@ tests, packages and publishes. The `check` workflow runs on every push.
   `build/MDKit.app`) without asking, or checking with a screenshot that it is idle. The user may be mid-rip, and
   interrupting one can leave the deck in an odd state. Use `swift build` / `swift test` (they write to `.build/`)
   while the app is open.
-- **Don't write to a real deck without the user's go-ahead.** Hardware behaviour was learned the hard way; see below.
+- **Don't write to a real deck without the user's go-ahead.** `HardwareTests` only runs on a blank disc and deletes only what it recorded. Hardware behaviour was learned the hard way; see below.
 - Ask before publishing anything (repo visibility, tags, releases).
 - Swift concurrency warnings are bugs: keep the build warning-free. `NetMDInterface` and `HomebrewRipper` are
   `@unchecked Sendable` because the app serialises every call on one queue.
