@@ -23,8 +23,9 @@ It also includes **homebrew mode ripping**, ported from [netmd-exploits](https:/
 reading tracks *back off* a disc on decks that don't support NetMD's standard download command (every NetMD unit
 except the Sony MZ-RH1/M200), by patching the recorder's own firmware in RAM to stream raw sector data out over USB.
 The patches are volatile — they live only in the deck's RAM and vanish when the deck loses power. There's nothing to "undo"
-and nothing is ever written to its permanent memory. One caveat: pulling the *USB cable* mid-rip isn't a power cycle,
-and leaves the deck unresponsive until you remove its batteries or power adapter for a few seconds.
+and nothing is ever written to its permanent memory. One caveat: if a rip is cut off without cleaning up — the cable
+pulled, or MDKit crashing or being force-quit mid-rip — the deck stops responding until you remove its batteries or
+power adapter for a few seconds. Cancelling a rip, or quitting MDKit normally, is safe.
 
 ## Features
 
@@ -128,7 +129,7 @@ on your particular deck, please open an issue with the exact model and, if rippi
 firmware version string shown in the Homebrew Ripping panel.
 
 As ever with anything that pokes at a device's factory mode: try it with a disc and a deck you don't mind risking
-first. The ripping patches are RAM-only and clear when the deck loses power (a deck whose cable was pulled mid-rip needs a power cycle), but this is still low-level, reverse-engineered
+first. The ripping patches are RAM-only and clear when the deck loses power (a deck whose rip was cut off needs a power cycle), but this is still low-level, reverse-engineered
 protocol work.
 
 ## Contributing

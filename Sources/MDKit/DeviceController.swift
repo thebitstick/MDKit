@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import SwiftUI
 import NetMDKit
 
@@ -87,6 +88,22 @@ final class DeviceController: ObservableObject {
             Task { @MainActor in await self?.poll() }
         }
         Task { await poll() }
+        // Quitting mid-rip would leave the deck's firmware redirect enabled, and a deck in that state
+        // stops answering everything until it is power-cycled. Stop the rip first so it clears the flag.
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.stopRippingBeforeQuit() }
+        }
+    }
+
+    /// Cancels an in-progress rip and waits (bounded) for it to unwind and clear the redirect. Spins the
+    /// run loop rather than blocking, because the rip's cancellation check hops through the main queue.
+    private func stopRippingBeforeQuit() {
+        guard isRipping else { return }
+        cancelRip = true
+        let deadline = Date().addingTimeInterval(15)
+        while isRipping, Date() < deadline {
+            RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(0.05))
+        }
     }
 
     // MARK: Worker plumbing
@@ -184,6 +201,8 @@ final class DeviceController: ObservableObject {
     }
 
     func disconnect() {
+        // Let an in-progress rip unwind (and clear the firmware redirect) before the connection closes.
+        if isRipping { cancelRip = true }
         let old = iface
         let oldRipper = ripper
         ripper = nil

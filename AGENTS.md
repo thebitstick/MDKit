@@ -51,9 +51,13 @@ tests, packages and publishes. The `check` workflow runs on every push.
 - **Firmware patches are applied atomically.** The control-transfer backend's two redirects and its resident handler
   go in as one injected program (`FirmwareAssembler.assembleControlInstaller`). Applying them as separate host-side
   steps leaves a window where the deck's background USB polling hits a half-installed redirect and hangs.
-- **Patches are RAM-only** and vanish on a power cycle, **not** on a USB unplug. Pulling the cable mid-rip leaves the
-  redirect enabled and the deck hung: every command, factory mode included, then times out until the batteries or
-  power adapter are removed (confirmed on hardware with `testUnplugDuringRip`). Nothing is written to the deck's EEPROM.
+- **Patches are RAM-only** and vanish on a power cycle, **not** on a USB unplug. Any rip that stops without clearing the
+  redirect flag (cable pulled, or the process killed mid-rip) leaves the deck hung: every command, factory mode
+  included, times out until the batteries or power adapter are removed. Confirmed on hardware with
+  `testUnplugDuringRip` and `testAbandonRipByKillingProcess`. It can't be fixed from the host afterwards, so
+  prevention is the only lever: quit and Disconnect cancel the rip first (`DeviceController`). A real fix would be a
+  firmware-side watchdog in the resident handler that disables itself, which needs a timer or USB-state address
+  nobody has reversed yet. Nothing is written to the deck's EEPROM.
 - **A failed transfer stops the batch**, for both uploads and rips: the unit may be mid-seek or mid-realignment, and
   racing into the next track's sequence on top of that is worse than stopping.
 - **Status polling pauses during uploads and rips** (`activeOps`, `isUploading`, `isRipping`).

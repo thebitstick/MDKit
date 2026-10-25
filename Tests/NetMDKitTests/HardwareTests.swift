@@ -138,6 +138,13 @@ final class HardwareTests: XCTestCase {
         for attempt in 1...3 {
             do {
                 print("PROBE attempt \(attempt): status \(try iface.getStatus())")
+                if ProcessInfo.processInfo.environment["MDKIT_PROBE_FLAG"] == "1" {
+                    let f = FactoryInterface(iface)
+                    try f.auth()
+                    let version = try f.descriptiveVersion()
+                    let flag = try f.read(address: try XCTUnwrap(FirmwareAssembler.controlAddresses[version]).enabledFlag, length: 4)
+                    print("PROBE firmware \(version), redirect enable flag = \(flag)")
+                }
                 // Optional: remove leftovers from interrupted hardware tests (only tracks titled "hw-*").
                 if ProcessInfo.processInfo.environment["MDKIT_CLEANUP"] == "1" {
                     let mine = try iface.listContent().allTracks.filter { $0.title.hasPrefix("hw-") }.map(\.index)
@@ -150,5 +157,21 @@ final class HardwareTests: XCTestCase {
             Thread.sleep(forTimeInterval: 3)
         }
         XCTFail("deck does not answer status queries")
+    }
+
+    /// Interactive-ish: kills THIS PROCESS mid-rip (a stand-in for the app crashing or being force-quit) with the cable
+    /// still attached. Run testProbe afterwards to see what state the deck is in.
+    func testAbandonRipByKillingProcess() throws {
+        let env = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(env["MDKIT_HARDWARE"] == "1" && env["MDKIT_ABANDON"] == "1", "set MDKIT_HARDWARE=1 MDKIT_ABANDON=1")
+        let device = try XCTUnwrap(NetMDTransport.attachedDevices().first, "no NetMD deck attached")
+        let iface = NetMDInterface(transport: try NetMDTransport(device: device))
+        try XCTSkipUnless(try iface.listContent().trackCount == 0, "disc is not blank; refusing to touch it")
+        try iface.upload(try prepared("hw-abandon", seconds: 60, mode: .sp))
+        let ripper = HomebrewRipper(iface)
+        try ripper.connect()
+        var reads = 0
+        _ = try ripper.downloadTrack(0, progress: { p in if p.action == "READ" { reads = p.read } },
+                                     isCancelled: { if reads >= 30 { kill(getpid(), SIGKILL) }; return false })
     }
 }
