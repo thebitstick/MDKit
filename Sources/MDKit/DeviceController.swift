@@ -164,8 +164,23 @@ final class DeviceController: ObservableObject {
             _ = try? await perform { try $0.netMDLevel() }
             await refresh()
         } catch {
-            errorMessage = error.localizedDescription
+            errorMessage = Self.stuckHint(error) ?? error.localizedDescription
         }
+    }
+
+    /// A deck whose cable was pulled mid-rip keeps its firmware redirect enabled and stops answering
+    /// everything until it loses power, which surfaces as USB timeouts.
+    private static func stuckHint(_ error: Error) -> String? {
+        guard case NetMDError.usb(let m) = error, m.contains("timed out") else { return nil }
+        return "\(error.localizedDescription). If a rip was interrupted (for example the cable was pulled), the deck is stuck in ripping mode: remove its batteries or power adapter for a few seconds, then reconnect."
+    }
+
+    private static func ripFailureMessage(_ error: Error) -> String {
+        if let hint = stuckHint(error) { return hint }
+        if case NetMDError.usb = error {
+            return "\(error.localizedDescription). The deck may now be stuck in ripping mode: if it stops responding, remove its batteries or power adapter for a few seconds."
+        }
+        return error.localizedDescription
     }
 
     func disconnect() {
@@ -424,7 +439,7 @@ final class DeviceController: ObservableObject {
             } catch NetMDError.cancelled {
                 setRip(id, .cancelled)
             } catch {
-                setRip(id, .failed(error.localizedDescription))
+                setRip(id, .failed(Self.ripFailureMessage(error)))
                 // A failed rip can leave the deck mid-seek or mid-realignment; stopping here
                 // (like startUploads does on failure) is safer than racing straight into another
                 // track's factory-mode sequence on top of that unknown state.

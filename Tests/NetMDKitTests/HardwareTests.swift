@@ -69,4 +69,77 @@ final class HardwareTests: XCTestCase {
         let again = try ripper.downloadTrack(0)
         XCTAssertEqual(again.data.count, spRip.data.count, "rip after a cancel differs in size from the first rip")
     }
+
+    /// Interactive: needs a person to pull the USB cable mid-rip. LEAVES THE DECK HUNG (see AGENTS.md): it only
+    /// recovers after its batteries or power adapter are removed, and the test then fails at the replug step. Also set MDKIT_UNPLUG_DIR to a writable directory;
+    /// the test writes `unplug-now` there once the rip is under way and `result.txt` at the end.
+    func testUnplugDuringRip() throws {
+        let env = ProcessInfo.processInfo.environment
+        try XCTSkipUnless(env["MDKIT_HARDWARE"] == "1" && env["MDKIT_UNPLUG_DIR"] != nil, "interactive; set MDKIT_HARDWARE=1 and MDKIT_UNPLUG_DIR")
+        let dir = URL(fileURLWithPath: env["MDKIT_UNPLUG_DIR"]!)
+        var log = [String]()
+        func note(_ s: String) { log.append(s); try? log.joined(separator: "\n").write(to: dir.appendingPathComponent("result.txt"), atomically: true, encoding: .utf8) }
+
+        let device = try XCTUnwrap(NetMDTransport.attachedDevices().first, "no NetMD deck attached")
+        var iface = NetMDInterface(transport: try NetMDTransport(device: device))
+        let before = try iface.listContent()
+        try XCTSkipUnless(before.trackCount == 0, "disc is not blank; refusing to touch it")
+
+        try iface.upload(try prepared("hw-unplug", seconds: 90, mode: .sp))
+        let ripper = HomebrewRipper(iface)
+        try ripper.connect()
+        note("rip starting")
+
+        var reads = 0, signalled = false
+        let started = Date()
+        var failedAt: Date?
+        do {
+            _ = try ripper.downloadTrack(0, progress: { p in
+                if p.action == "READ" { reads = p.read }
+                if reads >= 30, !signalled {
+                    signalled = true
+                    try? "go".write(to: dir.appendingPathComponent("unplug-now"), atomically: true, encoding: .utf8)
+                }
+            })
+            note("RIP COMPLETED without the cable being pulled (\(Int(Date().timeIntervalSince(started))) s)")
+        } catch {
+            failedAt = Date()
+            note("rip failed after \(reads) sectors, \(Int(Date().timeIntervalSince(started))) s in: \(error)")
+        }
+        ripper.disconnect()
+        iface.transport.close()
+        guard failedAt != nil else { return XCTFail("cable was not pulled in time") }
+
+        // Wait for the deck to come back, then see whether it is usable and clean up.
+        note("waiting for the deck to be plugged back in")
+        var back: AttachedDevice?
+        for _ in 0..<180 { if let d = NetMDTransport.attachedDevices().first { back = d; break }; Thread.sleep(forTimeInterval: 1) }
+        let d2 = try XCTUnwrap(back, "deck never reappeared")
+        Thread.sleep(forTimeInterval: 5)
+        iface = NetMDInterface(transport: try NetMDTransport(device: d2))
+        defer { iface.transport.close() }
+        let after = try iface.listContent()
+        note("deck back; disc has \(after.trackCount) track(s)")
+        let r2 = HomebrewRipper(iface)
+        try r2.connect()
+        let rip = try r2.downloadTrack(0, progress: nil, isCancelled: { false })
+        note("fresh rip after replug OK: \(rip.data.count) bytes")
+        r2.disconnect()
+        try iface.deleteTracks(Array(0..<(try iface.getTrackCount())))
+        note("cleaned up; disc has \(try iface.getTrackCount()) track(s)")
+    }
+
+    /// Read-only probe of a deck's state: can it answer a plain status query?
+    func testProbe() throws {
+        try XCTSkipUnless(ProcessInfo.processInfo.environment["MDKIT_PROBE"] == "1", "set MDKIT_PROBE=1")
+        let device = try XCTUnwrap(NetMDTransport.attachedDevices().first, "no NetMD deck attached")
+        let iface = NetMDInterface(transport: try NetMDTransport(device: device))
+        defer { iface.transport.close() }
+        for attempt in 1...3 {
+            do { print("PROBE attempt \(attempt): status \(try iface.getStatus())"); return }
+            catch { print("PROBE attempt \(attempt): \(error)") }
+            Thread.sleep(forTimeInterval: 3)
+        }
+        XCTFail("deck does not answer status queries")
+    }
 }

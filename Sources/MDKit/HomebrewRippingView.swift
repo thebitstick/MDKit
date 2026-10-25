@@ -5,7 +5,7 @@ import NetMDKit
 /// "Homebrew mode ripping" — pulls raw track data straight out of factory mode on decks that
 /// don't support the standard NetMD download command (i.e. everything except the MZ-RH1/M200).
 /// Needs no modification to the player: it's all done through RAM-only patches that undo
-/// themselves on disconnect or a power cycle.
+/// themselves on a power cycle.
 struct HomebrewRippingView: View {
     @EnvironmentObject var device: DeviceController
     @Environment(\.dismiss) private var dismiss
