@@ -4,10 +4,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$ROOT/build/atracdenc-src"
+# Pinned so builds are reproducible and upstream changes can't silently alter the bundled encoder.
+# To update: bump this, rebuild, and re-run an LP2/LP4 upload test.
+ATRACDENC_COMMIT=cb170709f836cb43dc0312455188c791159d81dc
 mkdir -p "$ROOT/build"
 if [ ! -d "$WORK" ]; then
-  git clone --depth 1 --recurse-submodules https://github.com/dcherednik/atracdenc.git "$WORK"
+  git clone https://github.com/dcherednik/atracdenc.git "$WORK"
 fi
+git -C "$WORK" fetch --quiet origin "$ATRACDENC_COMMIT" 2>/dev/null || true
+git -C "$WORK" checkout --quiet "$ATRACDENC_COMMIT"
+git -C "$WORK" submodule update --init --recursive --quiet
 cp "$ROOT/Vendor/patches/pcm_io_wav16.cpp" "$WORK/src/pcm_io_wav16.cpp"
 # Swap the libsndfile backend for the bundled WAV one.
 python3 - "$WORK/src/CMakeLists.txt" <<'PY'
