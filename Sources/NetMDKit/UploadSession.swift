@@ -95,13 +95,12 @@ extension NetMDInterface {
         var offset = 0
         var iv = [UInt8](repeating: 0, count: 8)
         var packetIndex = 0
-        var cancelled = false
 
         let (num, _, _) = try sendTrack(
             wireformat: track.wireformat, discFormat: track.wireformat.discFormat,
             frames: track.frameCount, packetSize: payload.count,
             packets: {
-                if isCancelled() { cancelled = true; throw NetMDError.cancelled }
+                if isCancelled() { throw NetMDError.cancelled }
                 guard offset < payload.count else { return nil }
                 let size = min(packetIndex == 0 ? Self.chunkSize - 24 : Self.chunkSize, payload.count - offset)
                 let plain = Array(payload[offset..<offset + size])
@@ -114,7 +113,6 @@ extension NetMDInterface {
             },
             sessionKey: sessionKey,
             progress: { written, total in progress?(UploadProgress(writtenBytes: written, totalBytes: total)) })
-        _ = cancelled
 
         try setTrackTitle(num, title: track.title)
         if let full = track.fullWidthTitle, !full.isEmpty { try setTrackTitle(num, title: full, wide: true) }

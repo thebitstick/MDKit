@@ -230,13 +230,13 @@ public enum ATRACRecovery {
 
     // MARK: Diagnostics
 
-    /// Saves the raw 2352-byte sector (metadata header + payload, exactly as the backend
-    /// returned it) to disk for inspection, and returns the path. Best-effort — a failure here
-    /// must never mask the real error.
     private static func hexPreview(_ raw: [UInt8], count: Int = 48) -> String {
         raw.prefix(count).map { String(format: "%02x", $0) }.joined(separator: " ")
     }
 
+    /// Saves the raw 2352-byte sector (metadata header + payload, exactly as the backend
+    /// returned it) to disk for inspection, and returns the path. Best-effort — a failure here
+    /// must never mask the real error.
     private static func dumpRawSector(_ raw: [UInt8], track: Int, logical: Int) -> String? {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent("MDKit-debug", isDirectory: true)
         let url = dir.appendingPathComponent("track\(track)-sector0x\(String(logical, radix: 16))-\(Int(Date().timeIntervalSince1970)).bin")

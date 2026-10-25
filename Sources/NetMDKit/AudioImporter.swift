@@ -62,7 +62,7 @@ public enum AudioImporter {
                                isCancelled: @escaping () -> Bool = { false },
                                stage: ((String) -> Void)? = nil) throws -> PreparedTrack {
         // Already-encoded ATRAC3 files are sent as-is.
-        if let at3 = try? ATRAC3File.parse(Data(contentsOf: url)) {
+        if ATRAC3File.hasATRAC3Header(url), let at3 = try? ATRAC3File.parse(Data(contentsOf: url)) {
             return PreparedTrack(title: title, wireformat: at3.wireformat, data: at3.payload)
         }
 
@@ -93,8 +93,13 @@ public enum AudioImporter {
             let proc = Process()
             proc.executableURL = encoderURL
             proc.arguments = ["-e", "atrac3", "--bitrate", String(mode.atracBitrateKbps), "-i", wavURL.path, "-o", outURL.path]
-            let err = Pipe()
-            proc.standardError = err
+            // stderr goes to a file, not a Pipe: nothing drains a pipe while we poll below, so a chatty
+            // encoder would fill its 64 KB buffer and block forever.
+            let errURL = tmp.appendingPathComponent("stderr.txt")
+            FileManager.default.createFile(atPath: errURL.path, contents: nil)
+            let errHandle = try FileHandle(forWritingTo: errURL)
+            defer { try? errHandle.close() }
+            proc.standardError = errHandle
             proc.standardOutput = FileHandle.nullDevice
             try proc.run()
             while proc.isRunning {
@@ -102,7 +107,7 @@ public enum AudioImporter {
                 Thread.sleep(forTimeInterval: 0.1)
             }
             guard proc.terminationStatus == 0, let data = try? Data(contentsOf: outURL) else {
-                let msg = String(decoding: err.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+                let msg = String(decoding: (try? Data(contentsOf: errURL)) ?? Data(), as: UTF8.self)
                 throw AudioImportError.encoderFailed(msg.isEmpty ? "exit status \(proc.terminationStatus)" : msg)
             }
             let at3 = try ATRAC3File.parse(data)
@@ -216,6 +221,17 @@ public struct ATRAC3File {
         switch bytesPerFrame { case 192: return .lp2; case 152: return .l105kbps; default: return .lp4 }
     }
     public var duration: Double { Double(payload.count / max(bytesPerFrame, 1)) * 512.0 / 44100.0 }
+
+    /// Cheap check of the first 44 bytes, so callers don't read an entire ordinary audio file
+    /// into memory just to learn it isn't ATRAC3.
+    static func hasATRAC3Header(_ url: URL) -> Bool {
+        guard let fh = try? FileHandle(forReadingFrom: url) else { return false }
+        defer { try? fh.close() }
+        guard let head = try? fh.read(upToCount: 44), head.count == 44 else { return false }
+        let d = [UInt8](head)
+        let tag = Int(d[20]) | Int(d[21]) << 8
+        return d[0..<4].elementsEqual("RIFF".utf8) && d[8..<16].elementsEqual("WAVEfmt ".utf8) && (tag == 0x270 || tag == 0xfffe)
+    }
 
     public static func parse(_ file: Data) throws -> ATRAC3File {
         let d = [UInt8](file.prefix(4096))
