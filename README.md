@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" width="640" alt="MDKit waiting for a NetMD recorder">
+  <img src="docs/screenshot.png" width="640" alt="MDKit showing a disc on a connected Sony MZ-NE410">
 </p>
 
 ---
